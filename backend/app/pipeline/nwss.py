@@ -123,6 +123,13 @@ async def fetch_nwss(lookback_days: int = 90) -> int:
                 "raw": None,
             })
 
+    # Deduplicate by constraint key in case CDC returns duplicate rows.
+    deduped: dict[tuple, dict] = {}
+    for rec in records:
+        key = (rec["source"], rec["site_id"], rec["signal_date"], rec["metric"], rec["pathogen"])
+        deduped[key] = rec
+    records = list(deduped.values())
+
     if not records:
         return 0
 

@@ -100,6 +100,14 @@ async def fetch_tgs(lookback_days: int = 90) -> int:
                 "raw": {"variant": variant, "region": r.get("usa_or_hhsregion")},
             })
 
+    # Deduplicate by constraint key — CDC may return multiple rows for the same
+    # (week_ending, variant, USA) which fan out to duplicate airport records.
+    deduped: dict[tuple, dict] = {}
+    for rec in records:
+        key = (rec["source"], rec["site_id"], rec["signal_date"], rec["metric"], rec["pathogen"])
+        deduped[key] = rec
+    records = list(deduped.values())
+
     if not records:
         return 0
 
