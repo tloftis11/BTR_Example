@@ -18,40 +18,54 @@ FIXTURE_PATH = Path(__file__).parent.parent.parent / "seed" / "signals_seed.json
 
 
 async def seed_if_empty(db: AsyncSession) -> int:
-    """Insert fixture signals if the table has fewer than 10 rows. Returns rows inserted."""
-    count = await db.scalar(select(func.count()).select_from(Signal))
-    if count and count >= 10:
-        log.info("Seed skipped — %d signals already in DB", count)
-        return 0
-
+    """
+    Seed missing sources from fixture file.
+    Checks each source independently — sources that already have data are skipped,
+    so existing pipeline data is never overwritten.
+    Returns total rows inserted.
+    """
     if not FIXTURE_PATH.exists():
         log.warning("Fixture file not found at %s", FIXTURE_PATH)
         return 0
 
     with open(FIXTURE_PATH) as f:
-        rows = json.load(f)
+        all_rows = json.load(f)
 
-    inserted = 0
-    for r in rows:
-        sig = Signal(
-            source=r["source"],
-            site_id=r["site_id"],
-            site_name=r.get("site_name"),
-            pathogen=r.get("pathogen"),
-            signal_date=r["signal_date"],
-            metric=r["metric"],
-            value=r.get("value"),
-            unit=r.get("unit"),
-            region=r.get("region"),
+    # Group fixture rows by source
+    by_source: dict[str, list[dict]] = {}
+    for r in all_rows:
+        by_source.setdefault(r["source"], []).append(r)
+
+    total_inserted = 0
+    for source, rows in by_source.items():
+        existing = await db.scalar(
+            select(func.count()).select_from(Signal).where(Signal.source == source)
         )
-        db.add(sig)
-        inserted += 1
+        if existing and existing > 0:
+            log.info("Seed skipped for %s — %d rows already in DB", source, existing)
+            continue
 
-    try:
-        await db.commit()
-        log.info("Seeded %d signals from fixture file", inserted)
-    except Exception as e:
-        await db.rollback()
-        log.warning("Seed commit failed (may be duplicate data): %s", e)
+        inserted = 0
+        for r in rows:
+            db.add(Signal(
+                source=r["source"],
+                site_id=r["site_id"],
+                site_name=r.get("site_name"),
+                pathogen=r.get("pathogen"),
+                signal_date=r["signal_date"],
+                metric=r["metric"],
+                value=r.get("value"),
+                unit=r.get("unit"),
+                region=r.get("region"),
+            ))
+            inserted += 1
 
-    return inserted
+        try:
+            await db.commit()
+            log.info("Seeded %d %s rows from fixture", inserted, source)
+            total_inserted += inserted
+        except Exception as e:
+            await db.rollback()
+            log.warning("Seed commit failed for %s: %s", source, e)
+
+    return total_inserted

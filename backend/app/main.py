@@ -4,10 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import settings
-from app.database import init_db, AsyncSessionLocal
+from fastapi import Depends
+from app.database import init_db, AsyncSessionLocal, get_db
 from app.routers import signals, anomalies, pipeline as pipeline_router, chat as chat_router, briefing as briefing_router
 from app.pipeline.runner import run_all_sources
 from app.pipeline.seed import seed_if_empty
+from sqlalchemy.ext.asyncio import AsyncSession
 
 scheduler = AsyncIOScheduler(timezone="UTC")
 
@@ -42,3 +44,10 @@ app.include_router(briefing_router.router, prefix="/api/briefing", tags=["briefi
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.post("/api/admin/reseed")
+async def admin_reseed(db: AsyncSession = Depends(get_db)):
+    """Force-seed missing sources from fixture file. Safe to call repeatedly."""
+    inserted = await seed_if_empty(db)
+    return {"inserted": inserted, "message": f"Seeded {inserted} rows for sources with no existing data."}
