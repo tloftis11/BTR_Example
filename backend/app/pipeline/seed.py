@@ -55,8 +55,6 @@ async def seed_if_empty(db: AsyncSession) -> int:
                 signal_date=r["signal_date"],
                 metric=r["metric"],
                 value=r.get("value"),
-                unit=r.get("unit"),
-                region=r.get("region"),
             ))
             inserted += 1
 
