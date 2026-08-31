@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models import Anomaly, PipelineRun, Signal
-from app.pipeline.rss_feeds import fetch_all_rss, format_rss_context
+from app.pipeline.news_search import get_news_context
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -161,14 +161,15 @@ async def _build_context(db: AsyncSession, include_rss: bool = True) -> str:
     for line in by_source.values():
         lines.append(line)
 
-    # Append live RSS outbreak news (fetched fresh at call time)
+    # Append live outbreak news or model-knowledge fallback
     if include_rss:
         try:
-            rss_items = await fetch_all_rss(max_items_per_feed=4)
-            lines.append("")
-            lines.append(format_rss_context(rss_items))
+            news = await get_news_context(settings.tavily_api_key)
+            if news:
+                lines.append("")
+                lines.append(news)
         except Exception as e:
-            log.warning("RSS fetch skipped: %s", e)
+            log.warning("News context skipped: %s", e)
 
     return "\n".join(lines)
 

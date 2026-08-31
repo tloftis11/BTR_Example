@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     cdc_variants_dataset_id: str = "jr58-6ysp"  # SARS-CoV-2 variant proportions
     socrata_app_token: str = ""
     anthropic_api_key: str = ""
+    tavily_api_key: str = ""
     pull_lookback_days: int = 90
     anomaly_window_weeks: int = 8
     anomaly_threshold: float = 2.0
