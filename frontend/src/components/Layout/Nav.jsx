@@ -13,7 +13,7 @@ export default function Nav() {
 
   return (
     <nav className="nav">
-      <NavLink to="/dashboard" className="nav-logo">
+      <NavLink to="/" className="nav-logo">
         <span className="nav-logo-mark" />
         Biothreat Radar
       </NavLink>

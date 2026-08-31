@@ -1,21 +1,26 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Nav from './components/Layout/Nav'
+import LandingPage from './pages/LandingPage'
 import DashboardPage from './pages/DashboardPage'
 import AboutPage from './pages/AboutPage'
+
+function AppShell({ children }) {
+  return (
+    <div className="app-shell">
+      <Nav />
+      <div className="main-content">{children}</div>
+    </div>
+  )
+}
 
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="app-shell">
-        <Nav />
-        <div className="main-content">
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/about" element={<AboutPage />} />
-          </Routes>
-        </div>
-      </div>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/dashboard" element={<AppShell><DashboardPage /></AppShell>} />
+        <Route path="/about" element={<AppShell><AboutPage /></AppShell>} />
+      </Routes>
     </BrowserRouter>
   )
 }
