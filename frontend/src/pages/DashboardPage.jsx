@@ -18,7 +18,7 @@ const STREAMS = {
   nwss: { label: 'NWSS',   color: 'var(--nwss)', metric: 'detect_prop_15d',   title: 'Wastewater Detection',        sub: 'detect_prop_15d · national avg' },
   tgs:  { label: 'TGS',    color: 'var(--tgs)',  metric: 'variant_proportion', title: 'Variant Proportions',         sub: 'stacked by variant · airports' },
   sbd:  { label: 'SBD',    color: 'var(--sbd)',  metric: 'novelty_score',      title: 'Environmental Metagenomic',   sub: 'novelty score' },
-  hmp:  { label: 'HMP',    color: 'var(--hmp)',  metric: 'alert_count',        title: 'HealthMap Global Alerts',     sub: 'disease event intensity' },
+  hmp:  { label: 'HMP',    color: 'var(--hmp)',  metric: 'alert_count',        title: 'Global Epidemic Events',      sub: 'ReliefWeb / UN OCHA · epidemics' },
   who:  { label: 'WHO',    color: 'var(--who)',  metric: 'outbreak_event',     title: 'WHO Outbreak Events',         sub: 'declared DON events' },
   nao:  { label: 'NAO',    color: 'var(--nao)',  metric: 'sequencing_runs',    title: 'NAO Metagenomics',            sub: 'NCBI SRA · PRJNA729801' },
   nst:  { label: 'NST',    color: 'var(--nst)',  metric: 'h5n1_sequences',     title: 'Nextstrain Genomics',         sub: 'H5N1 sequences by country' },
@@ -149,6 +149,22 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* ── AI Intelligence Panel ───────────────────────────────── */}
+      <div className="card" style={{ borderColor: 'var(--ac-mid)' }}>
+        <div className="card-header">
+          <span className="card-title">
+            <span style={{ color: 'var(--ac)', fontSize: 10, fontFamily: 'var(--mono)', letterSpacing: '0.06em', marginRight: 6 }}>⬡ AI</span>
+            Intelligence Analysis
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--tx-faint)', fontFamily: 'var(--mono)' }}>
+            powered by Claude · live DB context
+          </span>
+        </div>
+        <div className="card-body">
+          <ChatPanel />
+        </div>
+      </div>
+
       {/* ── Map + Anomaly table ─────────────────────────────────── */}
       <div className="mid-row">
         <div className="card map-card">
@@ -171,22 +187,6 @@ export default function DashboardPage() {
           <div className="card-body no-pad" style={{ flex: 1, overflowY: 'auto' }}>
             <AnomalyTable anomalies={anomalies} loading={loadAnomaly} />
           </div>
-        </div>
-      </div>
-
-      {/* ── AI Intelligence Panel ───────────────────────────────── */}
-      <div className="card">
-        <div className="card-header">
-          <span className="card-title">
-            <span style={{ color: 'var(--ac)', fontSize: 10, fontFamily: 'var(--mono)', letterSpacing: '0.06em' }}>AI</span>
-            Intelligence Analysis
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--tx-faint)', fontFamily: 'var(--mono)' }}>
-            powered by Claude · queries live DB context
-          </span>
-        </div>
-        <div className="card-body">
-          <ChatPanel />
         </div>
       </div>
 

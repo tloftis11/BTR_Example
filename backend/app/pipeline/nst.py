@@ -27,7 +27,15 @@ NEXTSTRAIN_BASE = "https://nextstrain.org/charon/getDataset"
 # (prefix, source_label, metric_name, pathogen_name)
 DATASETS = [
     ("/avian-flu/h5n1/ha/all-time", "H5N1", "h5n1_sequences", "H5N1 Avian Influenza"),
-    ("/mpox/global",                "mpox", "mpox_sequences",  "Mpox"),
+    ("/mpox/all-clades",             "mpox", "mpox_sequences",  "Mpox"),
+]
+
+# Fallback candidate prefixes to try for the mpox dataset
+MPOX_FALLBACK_PREFIXES = [
+    "/mpox/all-clades",
+    "/mpox/mpxv",
+    "/mpox/clade-iib",
+    "/mpox/global",
 ]
 
 # Country centroids for Nextstrain country labels
@@ -88,29 +96,35 @@ def _walk_tips(node: dict, tips: list) -> None:
             tips.append({"country": country_val, "num_date": float(num_date)})
 
 
-async def _fetch_dataset(prefix: str) -> list[dict] | None:
-    try:
-        async with httpx.AsyncClient(timeout=60) as client:
-            resp = await client.get(
-                NEXTSTRAIN_BASE,
-                params={"prefix": prefix},
-                headers={"Accept": "application/json"},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-    except Exception as e:
-        log.warning("Nextstrain dataset %s fetch failed: %s", prefix, e)
-        return None
+async def _fetch_dataset(prefix: str | list[str]) -> tuple[str | None, list[dict] | None]:
+    """Try one prefix (or a list of fallback prefixes). Returns (used_prefix, tips)."""
+    prefixes = [prefix] if isinstance(prefix, str) else prefix
 
-    tree = data.get("tree")
-    if not tree:
-        log.warning("Nextstrain %s: no tree in response", prefix)
-        return None
+    async with httpx.AsyncClient(timeout=60) as client:
+        for p in prefixes:
+            try:
+                resp = await client.get(
+                    NEXTSTRAIN_BASE,
+                    params={"prefix": p},
+                    headers={"Accept": "application/json"},
+                )
+                if resp.status_code != 200:
+                    log.debug("Nextstrain %s: HTTP %s", p, resp.status_code)
+                    continue
+                data = resp.json()
+                tree = data.get("tree")
+                if not tree:
+                    log.debug("Nextstrain %s: no tree in response", p)
+                    continue
+                tips: list[dict] = []
+                _walk_tips(tree, tips)
+                log.info("Nextstrain %s: extracted %d tip sequences", p, len(tips))
+                return p, tips
+            except Exception as e:
+                log.debug("Nextstrain %s fetch failed: %s", p, e)
 
-    tips: list[dict] = []
-    _walk_tips(tree, tips)
-    log.info("Nextstrain %s: extracted %d tip sequences", prefix, len(tips))
-    return tips
+    log.warning("Nextstrain: all candidates failed for %s", prefixes[0])
+    return None, None
 
 
 async def fetch_nextstrain(lookback_days: int = 365) -> int:
@@ -118,8 +132,9 @@ async def fetch_nextstrain(lookback_days: int = 365) -> int:
     since = date.today() - timedelta(days=lookback_days)
     total_rows = 0
 
-    for prefix, label, metric, pathogen in DATASETS:
-        tips = await _fetch_dataset(prefix)
+    for prefix_or_label, label, metric, pathogen in DATASETS:
+        candidates = MPOX_FALLBACK_PREFIXES if label == "mpox" else [prefix_or_label]
+        used_prefix, tips = await _fetch_dataset(candidates)
         if not tips:
             continue
 
@@ -155,7 +170,7 @@ async def fetch_nextstrain(lookback_days: int = 365) -> int:
                 "signal_date": week_start,
                 "metric": metric,
                 "value": float(count),
-                "raw": {"country": country, "dataset": prefix},
+                "raw": {"country": country, "dataset": used_prefix},
             })
 
         # Deduplicate

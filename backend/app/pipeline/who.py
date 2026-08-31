@@ -2,7 +2,7 @@
 WHO Disease Outbreak News (DON) pipeline.
 
 Fetches WHO's public RSS feed for internationally notifiable disease events.
-Each item is a declared outbreak with title, date, and affected country.
+Tries multiple candidate URLs since WHO periodically restructures their site.
 """
 
 import logging
@@ -19,7 +19,13 @@ from app.models import Signal
 
 log = logging.getLogger(__name__)
 
-WHO_DON_RSS = "https://www.who.int/feeds/entity/csr/don/en/rss.xml"
+# Try multiple known/candidate WHO DON RSS URLs in order
+WHO_DON_URLS = [
+    "https://www.who.int/csr/don/en/rss.xml",
+    "https://www.who.int/feeds/entity/csr/don/en/rss.xml",
+    "https://www.who.int/rss-feeds/news-releases.xml",
+    "https://www.who.int/feeds/entity/news/en/rss.xml",
+]
 
 # Approximate country centroids for WHO event location parsing
 COUNTRY_COORDS: dict[str, tuple[float, float]] = {
@@ -58,17 +64,29 @@ COUNTRY_COORDS: dict[str, tuple[float, float]] = {
 }
 
 
+async def _try_fetch_rss(url: str) -> str | None:
+    try:
+        async with httpx.AsyncClient(timeout=20, follow_redirects=True) as client:
+            resp = await client.get(
+                url,
+                headers={"User-Agent": "BiothreatRadar/1.0"},
+            )
+            if resp.status_code == 200:
+                log.info("WHO DON: got 200 from %s", url)
+                return resp.text
+            log.debug("WHO DON: %s returned %s", url, resp.status_code)
+    except Exception as e:
+        log.debug("WHO DON: %s failed: %s", url, e)
+    return None
+
+
 def _parse_location(title: str) -> tuple[str, str, float, float]:
-    """Returns (disease, country, lat, lon) from WHO DON title."""
-    # Format: "Disease Name - Country Name" or "Disease - update N"
     parts = title.rsplit(" - ", 1)
     if len(parts) == 2:
         disease_raw = parts[0].strip()
         location_raw = re.split(r"\s*[–—]\s*update\b", parts[1], flags=re.IGNORECASE)[0].strip()
-        # Try exact match
         coords = COUNTRY_COORDS.get(location_raw)
         if not coords:
-            # Partial match
             for key, c in COUNTRY_COORDS.items():
                 if key.lower() in location_raw.lower() or location_raw.lower() in key.lower():
                     coords = c
@@ -83,22 +101,21 @@ async def fetch_who_don(lookback_days: int = 180) -> int:
     """Pull WHO Disease Outbreak News and upsert. Returns rows inserted."""
     since = date.today() - timedelta(days=lookback_days)
 
-    try:
-        async with httpx.AsyncClient(timeout=20, follow_redirects=True) as client:
-            resp = await client.get(
-                WHO_DON_RSS,
-                headers={"User-Agent": "BiothreatRadar/1.0 (+https://biothreat-radar.onrender.com)"},
-            )
-            resp.raise_for_status()
-            xml_text = resp.text
-    except Exception as e:
-        log.warning("WHO DON fetch failed: %s", e)
+    # Try candidate URLs
+    xml_text = None
+    for url in WHO_DON_URLS:
+        xml_text = await _try_fetch_rss(url)
+        if xml_text:
+            break
+
+    if not xml_text:
+        log.warning("WHO DON: all RSS URL candidates returned no data")
         return 0
 
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError as e:
-        log.warning("WHO DON XML parse error: %s", e)
+        log.warning("WHO DON: XML parse error: %s", e)
         return 0
 
     items = root.findall(".//item")
@@ -142,7 +159,6 @@ async def fetch_who_don(lookback_days: int = 180) -> int:
         log.info("WHO DON: no parseable recent events")
         return 0
 
-    # Deduplicate
     deduped: dict[tuple, dict] = {}
     for rec in records:
         key = (rec["source"], rec["site_id"], rec["signal_date"], rec["metric"], rec["pathogen"])
