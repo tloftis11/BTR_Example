@@ -48,7 +48,7 @@ async def fetch_tgs(lookback_days: int = 90) -> int:
         "$where": f"week_ending >= '{since}'",
         "$limit": 10000,
         "$order": "week_ending ASC",
-        "$select": "week_ending,usa_or_hhsregion,variant,share,creation_date",
+        # No $select — fetch all columns to avoid 400s if CDC renames fields.
     }
     if settings.socrata_app_token:
         params["$$app_token"] = settings.socrata_app_token
@@ -74,12 +74,14 @@ async def fetch_tgs(lookback_days: int = 90) -> int:
         except (KeyError, ValueError):
             continue
 
-        variant = r.get("variant") or "Unknown"
+        variant = r.get("variant") or r.get("lineage") or "Unknown"
         share = None
-        try:
-            share = float(r["share"])
-        except (KeyError, TypeError, ValueError):
-            pass
+        for field in ("share", "proportion", "modelestimate", "weighted_estimate"):
+            try:
+                share = float(r[field])
+                break
+            except (KeyError, TypeError, ValueError):
+                continue
 
         # Write one record per airport so the map has geographic points
         for airport in TGS_AIRPORTS:

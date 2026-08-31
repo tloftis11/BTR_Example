@@ -54,11 +54,8 @@ async def fetch_nwss(lookback_days: int = 90) -> int:
         "$where": f"date_start >= '{since}'",
         "$limit": 50000,
         "$order": "date_start ASC",
-        "$select": (
-            "wwtp_id,wwtp_jurisdiction,county_fips,county_names,"
-            "date_start,date_end,detect_prop_15d,ptc_15d,percentile,"
-            "sample_location,population_served"
-        ),
+        # No $select — fetch all columns so field-name changes in the dataset
+        # don't cause 400 errors; we pick what we need from the response.
     }
     if settings.socrata_app_token:
         params["$$app_token"] = settings.socrata_app_token

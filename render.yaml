@@ -21,7 +21,7 @@ services:
       - key: SOCRATA_APP_TOKEN
         sync: false   # set manually in Render dashboard
       - key: CORS_ORIGINS
-        value: '["https://biothreat-frontend.onrender.com"]'
+        value: '["*"]'
 
   # ── Frontend (static) ────────────────────────────────────────────────
   - type: web

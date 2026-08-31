@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getSummary, getSignalSites, getAnomalies, getTimeseries } from '../api/client'
+import { getSummary, getSignalSites, getAnomalies, getTimeseries, getPipelineRuns } from '../api/client'
 import SiteMap from '../components/Dashboard/SiteMap'
 import AnomalyTable from '../components/Dashboard/AnomalyTable'
 import SignalChart from '../components/Dashboard/SignalChart'
-import { format } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 
 const WEEKS = 13
 
@@ -12,6 +12,7 @@ export default function DashboardPage() {
   const [activeStreams, setActiveStreams] = useState({ nwss: true, tgs: true, sbd: true })
 
   const { data: summary }   = useQuery({ queryKey: ['summary'],   queryFn: getSummary,           refetchInterval: 60_000 })
+  const { data: runs }      = useQuery({ queryKey: ['runs'],      queryFn: getPipelineRuns,      refetchInterval: 15_000 })
   const { data: sites }     = useQuery({ queryKey: ['sites'],     queryFn: () => getSignalSites() })
   const { data: anomalies, isLoading: loadAnomaly } = useQuery({
     queryKey: ['anomalies'], queryFn: () => getAnomalies({ active_only: true, limit: 100 })
@@ -125,6 +126,50 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Pipeline status */}
+      {runs && runs.length > 0 && (
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Pipeline Status</span>
+            <span style={{ fontSize: 11, color: 'var(--tx-faint)' }}>last {runs.length} runs · refreshes every 15s</span>
+          </div>
+          <div className="card-body no-pad">
+            <div className="anomaly-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Rows</th>
+                    <th>Started</th>
+                    <th>Error</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {runs.map(r => (
+                    <tr key={r.id}>
+                      <td><span className="stream-dot" style={{ background: r.source === 'nwss' ? 'var(--nwss)' : r.source === 'tgs' ? 'var(--tgs)' : 'var(--sbd)' }} />{r.source.toUpperCase()}</td>
+                      <td>
+                        <span className={`badge ${r.status === 'success' ? 'badge-ok' : r.status === 'error' ? 'badge-crit' : 'badge-warn'}`}>
+                          {r.status}
+                        </span>
+                      </td>
+                      <td className="tabular">{r.rows_inserted ?? '—'}</td>
+                      <td style={{ color: 'var(--tx-muted)', fontSize: 12 }}>
+                        {r.started_at ? formatDistanceToNow(new Date(r.started_at), { addSuffix: true }) : '—'}
+                      </td>
+                      <td style={{ color: 'var(--crit)', fontSize: 11, fontFamily: 'var(--mono)', maxWidth: 320, wordBreak: 'break-all' }}>
+                        {r.error || ''}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Signal charts */}
       <div className="chart-row">
