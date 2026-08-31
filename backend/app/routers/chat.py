@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models import Anomaly, PipelineRun, Signal
+from app.pipeline.rss_feeds import fetch_all_rss, format_rss_context
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -37,7 +38,7 @@ When writing briefings or answering questions:
 - Do NOT speculate beyond what the data supports"""
 
 
-async def _build_context(db: AsyncSession) -> str:
+async def _build_context(db: AsyncSession, include_rss: bool = True) -> str:
     """Query DB for current surveillance state and format as context string."""
     since = date.today() - timedelta(days=90)
 
@@ -159,6 +160,15 @@ async def _build_context(db: AsyncSession) -> str:
             )
     for line in by_source.values():
         lines.append(line)
+
+    # Append live RSS outbreak news (fetched fresh at call time)
+    if include_rss:
+        try:
+            rss_items = await fetch_all_rss(max_items_per_feed=4)
+            lines.append("")
+            lines.append(format_rss_context(rss_items))
+        except Exception as e:
+            log.warning("RSS fetch skipped: %s", e)
 
     return "\n".join(lines)
 
