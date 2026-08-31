@@ -49,8 +49,9 @@ export default function LandingPage() {
               The signal<br />was already<br />there.<span className="lp-cursor" aria-hidden="true" />
             </h1>
             <p className="lp-hero-sub">
-              Seven independent public data streams. One AI fusion layer that reads them together.
-              Biothreat Radar surfaces emerging biological threats as a daily intelligence briefing.
+              While CDC should continue to improve the source data it is collecting, there is
+              significant power in the data it already has. The demo below shows how these items
+              could be tied together with currently publicly available data.
             </p>
             <div className="lp-btns">
               <Link to="/briefing" className="lp-btn lp-btn-primary">View Today's Briefing</Link>
