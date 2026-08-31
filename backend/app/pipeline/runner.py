@@ -14,6 +14,7 @@ from app.pipeline.nao import fetch_nao
 from app.pipeline.nst import fetch_nextstrain
 from app.pipeline.anomaly import run_anomaly_detection
 from app.config import settings
+from app.database import AsyncSessionLocal as _Session
 
 log = logging.getLogger(__name__)
 
@@ -66,6 +67,33 @@ async def run_all_sources() -> dict:
     except Exception as e:
         log.exception("Anomaly detection failed")
         summary["anomalies"] = {"status": "error", "error": str(e)}
+
+    # Auto-generate and store the daily briefing after each successful pipeline run
+    if settings.anthropic_api_key:
+        try:
+            from app.routers.briefing import generate_briefing_text
+            from app.routers.chat import _build_context
+            from app.models import DailyBriefing
+            from datetime import date as _date
+            async with _Session() as session:
+                context = await _build_context(session)
+                content = await generate_briefing_text(context)
+                row = DailyBriefing(
+                    briefing_date=_date.today(),
+                    content=content,
+                    data_context=context,
+                    model_id="claude-sonnet-5",
+                    is_default=True,
+                )
+                session.add(row)
+                await session.commit()
+            summary["briefing"] = {"status": "success"}
+            log.info("Daily briefing generated and stored")
+        except Exception as e:
+            log.warning("Daily briefing generation failed: %s", e)
+            summary["briefing"] = {"status": "error", "error": str(e)}
+    else:
+        summary["briefing"] = {"status": "skipped", "reason": "no API key"}
 
     log.info("Pipeline run complete: %s", summary)
     return summary

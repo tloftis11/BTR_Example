@@ -21,8 +21,9 @@ export default function Nav() {
       </NavLink>
 
       <ul className="nav-links">
-        <li><NavLink to="/dashboard">Dashboard</NavLink></li>
+        <li><NavLink to="/briefing">Briefing</NavLink></li>
         <li><NavLink to="/intel">Intel</NavLink></li>
+        <li><NavLink to="/data">Data</NavLink></li>
         <li><NavLink to="/about">About</NavLink></li>
       </ul>
 

@@ -5,7 +5,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import settings
 from app.database import init_db
-from app.routers import signals, anomalies, pipeline as pipeline_router, chat as chat_router
+from app.routers import signals, anomalies, pipeline as pipeline_router, chat as chat_router, briefing as briefing_router
 from app.pipeline.runner import run_all_sources
 
 scheduler = AsyncIOScheduler(timezone="UTC")
@@ -33,6 +33,7 @@ app.include_router(signals.router, prefix="/api/signals", tags=["signals"])
 app.include_router(anomalies.router, prefix="/api/anomalies", tags=["anomalies"])
 app.include_router(pipeline_router.router, prefix="/api/pipeline", tags=["pipeline"])
 app.include_router(chat_router.router, prefix="/api/chat", tags=["chat"])
+app.include_router(briefing_router.router, prefix="/api/briefing", tags=["briefing"])
 
 
 @app.get("/health")
