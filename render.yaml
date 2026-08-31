@@ -2,7 +2,7 @@ databases:
   - name: biothreat-db
     databaseName: biothreat
     user: biothreat
-    plan: starter
+    plan: basic-256mb
 
 services:
   # ── Backend API ──────────────────────────────────────────────────────
@@ -30,7 +30,6 @@ services:
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
-    plan: starter
     envVars:
       - key: VITE_API_URL
         value: https://biothreat-api.onrender.com
