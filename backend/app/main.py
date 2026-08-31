@@ -4,9 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import settings
-from app.database import init_db
+from app.database import init_db, AsyncSessionLocal
 from app.routers import signals, anomalies, pipeline as pipeline_router, chat as chat_router, briefing as briefing_router
 from app.pipeline.runner import run_all_sources
+from app.pipeline.seed import seed_if_empty
 
 scheduler = AsyncIOScheduler(timezone="UTC")
 
@@ -14,6 +15,8 @@ scheduler = AsyncIOScheduler(timezone="UTC")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    async with AsyncSessionLocal() as db:
+        await seed_if_empty(db)
     scheduler.add_job(run_all_sources, "cron", hour=6, minute=0, id="daily_pull")
     scheduler.start()
     yield
