@@ -9,7 +9,6 @@ import SiteMap from '../components/Dashboard/SiteMap'
 import AnomalyTable from '../components/Dashboard/AnomalyTable'
 import SignalChart from '../components/Dashboard/SignalChart'
 import VariantChart from '../components/Dashboard/VariantChart'
-import ChatPanel from '../components/Dashboard/ChatPanel'
 
 const WEEKS = 13
 
@@ -146,22 +145,6 @@ export default function DashboardPage() {
             {summary?.latest_tgs_date ? format(new Date(summary.latest_tgs_date), 'MMM d') : '—'}
           </div>
           <div className="stat-meta">variant proportions · airports</div>
-        </div>
-      </div>
-
-      {/* ── AI Intelligence Panel ───────────────────────────────── */}
-      <div className="card" style={{ borderColor: 'var(--ac-mid)' }}>
-        <div className="card-header">
-          <span className="card-title">
-            <span style={{ color: 'var(--ac)', fontSize: 10, fontFamily: 'var(--mono)', letterSpacing: '0.06em', marginRight: 6 }}>⬡ AI</span>
-            Intelligence Analysis
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--tx-faint)', fontFamily: 'var(--mono)' }}>
-            powered by Claude · live DB context
-          </span>
-        </div>
-        <div className="card-body">
-          <ChatPanel />
         </div>
       </div>
 

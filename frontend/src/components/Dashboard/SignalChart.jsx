@@ -17,13 +17,14 @@ function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: '#0C1528',
-      border: '1px solid #1A2E52',
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
       borderRadius: 4,
       padding: '8px 12px',
       fontSize: 12,
+      boxShadow: 'var(--shadow)',
     }}>
-      <div style={{ color: '#3A5480', marginBottom: 4, fontFamily: 'var(--mono)' }}>{label}</div>
+      <div style={{ color: 'var(--tx-faint)', marginBottom: 4, fontFamily: 'var(--mono)' }}>{label}</div>
       {payload.map(p => (
         <div key={p.dataKey} style={{ color: p.color, fontFamily: 'var(--mono)', fontWeight: 500 }}>
           {p.value != null ? p.value.toFixed(4) : '—'}
@@ -55,17 +56,17 @@ export default function SignalChart({ data = [], source, metric, loading }) {
             <stop offset="95%" stopColor={color} stopOpacity={0.02} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1A2E52" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
         <XAxis
           dataKey="date"
           tickFormatter={tickFormatter}
-          tick={{ fontSize: 10, fill: '#3A5480', fontFamily: 'var(--mono)' }}
+          tick={{ fontSize: 10, fill: 'var(--tx-faint)', fontFamily: 'var(--mono)' }}
           axisLine={false}
           tickLine={false}
           interval="preserveStartEnd"
         />
         <YAxis
-          tick={{ fontSize: 10, fill: '#3A5480', fontFamily: 'var(--mono)' }}
+          tick={{ fontSize: 10, fill: 'var(--tx-faint)', fontFamily: 'var(--mono)' }}
           axisLine={false}
           tickLine={false}
           width={36}

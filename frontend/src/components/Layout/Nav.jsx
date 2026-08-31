@@ -22,6 +22,7 @@ export default function Nav() {
 
       <ul className="nav-links">
         <li><NavLink to="/dashboard">Dashboard</NavLink></li>
+        <li><NavLink to="/intel">Intel</NavLink></li>
         <li><NavLink to="/about">About</NavLink></li>
       </ul>
 
