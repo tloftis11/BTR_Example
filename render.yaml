@@ -2,7 +2,7 @@ databases:
   - name: biothreat-db
     databaseName: biothreat
     user: biothreat
-    plan: free
+    plan: starter
 
 services:
   # ── Backend API ──────────────────────────────────────────────────────
@@ -12,7 +12,7 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    plan: free
+    plan: starter
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -30,7 +30,7 @@ services:
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
-    plan: free
+    plan: starter
     envVars:
       - key: VITE_API_URL
         value: https://biothreat-api.onrender.com
@@ -43,7 +43,7 @@ services:
     buildCommand: pip install -r requirements.txt
     schedule: "0 6 * * *"   # 06:00 UTC daily
     startCommand: python -c "import asyncio; from app.pipeline.runner import run_all_sources; asyncio.run(run_all_sources())"
-    plan: free
+    plan: starter
     envVars:
       - key: DATABASE_URL
         fromDatabase:

@@ -10,7 +10,7 @@ Biosurveillance fusion dashboard pulling real data from NWSS, CDC Traveler Genom
 | Backend | FastAPI + SQLAlchemy 2 + asyncpg |
 | Database | PostgreSQL |
 | Pipeline | Daily cron via APScheduler / Render Cron |
-| Deployment | Render (free tier) |
+| Deployment | Render (starter tier) |
 
 ---
 
