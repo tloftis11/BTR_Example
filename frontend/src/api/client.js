@@ -18,3 +18,6 @@ export const generateBriefing    = (filters) => api.post('/api/briefing/generate
 
 // Chat (interactive Q&A)
 export const sendChatMessage     = (messages) => api.post('/api/chat/message', { messages }).then(r => r.data)
+
+// Admin
+export const reseedDatabase      = ()        => api.post('/api/admin/reseed').then(r => r.data)

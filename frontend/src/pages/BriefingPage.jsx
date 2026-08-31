@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
-import { getLatestBriefing, generateBriefing, getPipelineRuns } from '../api/client'
+import { getLatestBriefing, generateBriefing, getSummary, reseedDatabase } from '../api/client'
 
 const PATHOGENS = [
   { id: 'sars2', label: 'SARS-CoV-2' },
@@ -39,7 +39,12 @@ export default function BriefingPage() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const { data: runs } = useQuery({ queryKey: ['runs'], queryFn: getPipelineRuns })
+  const { data: summary, refetch: refetchSummary } = useQuery({ queryKey: ['summary'], queryFn: getSummary })
+
+  const reseedMut = useMutation({
+    mutationFn: reseedDatabase,
+    onSuccess: () => refetchSummary(),
+  })
 
   const genMut = useMutation({
     mutationFn: generateBriefing,
@@ -80,10 +85,8 @@ export default function BriefingPage() {
   const isCustom       = Boolean(customBriefing?.briefing)
   const hasFilters     = selectedPathogens.length > 0 || selectedStreams.length > 0 || region !== 'global'
 
-  // Latest successful run per source
-  const latestRuns = runs ? Object.values(
-    runs.reduce((acc, r) => { if (!acc[r.source]) acc[r.source] = r; return acc }, {})
-  ) : []
+  const signalCounts = summary?.signal_counts || {}
+  const streamOrder = ['nwss','tgs','sbd','hmp','who','nao','nst']
 
   return (
     <div className="br-layout">
@@ -220,25 +223,31 @@ export default function BriefingPage() {
         {/* ── Sidebar: pipeline status ── */}
         <div className="br-sidebar">
           <div className="br-sidebar-card">
-            <div className="br-sidebar-label">Data Streams</div>
-            {latestRuns.length === 0
-              ? <div className="br-sidebar-empty">No sync data yet</div>
-              : latestRuns.map(r => (
-                <div key={r.source} className="br-stream-row">
-                  <span
-                    className="stream-dot"
-                    style={{ background: STREAMS.find(s => s.id === r.source?.toUpperCase())?.color || 'var(--tx-faint)' }}
-                  />
-                  <span className="br-stream-name">
-                    {r.source?.toUpperCase()}
+            <div className="br-sidebar-label">Signal Database</div>
+            {streamOrder.map(src => {
+              const count = signalCounts[src] ?? '…'
+              const color = STREAMS.find(s => s.id === src.toUpperCase())?.color || 'var(--tx-faint)'
+              return (
+                <div key={src} className="br-stream-row">
+                  <span className="stream-dot" style={{ background: color }} />
+                  <span className="br-stream-name">{src.toUpperCase()}</span>
+                  <span className="br-stream-rows">
+                    {count > 0
+                      ? <span style={{ color: 'var(--ok)' }}>{count.toLocaleString()}</span>
+                      : <span style={{ color: 'var(--tx-faint)' }}>0</span>
+                    }
                   </span>
-                  <span className={`badge ${r.status === 'success' ? 'badge-ok' : r.status === 'error' ? 'badge-crit' : 'badge-warn'}`} style={{ fontSize: 9 }}>
-                    {r.status}
-                  </span>
-                  <span className="br-stream-rows">{r.rows_inserted ?? 0} rows</span>
                 </div>
-              ))
-            }
+              )
+            })}
+            <button
+              className="br-reset-btn"
+              style={{ marginTop: '0.5rem', width: '100%', textAlign: 'center' }}
+              onClick={() => reseedMut.mutate()}
+              disabled={reseedMut.isPending}
+            >
+              {reseedMut.isPending ? 'Seeding…' : reseedMut.isSuccess ? `✓ Seeded ${reseedMut.data?.inserted ?? 0} rows` : 'Seed missing streams'}
+            </button>
           </div>
 
           <div className="br-sidebar-card">

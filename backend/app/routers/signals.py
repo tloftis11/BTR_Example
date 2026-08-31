@@ -205,6 +205,14 @@ async def get_summary(db: AsyncSession = Depends(get_db)):
         )
     )
 
+    # Actual row counts per source in Signal table
+    sources = ["nwss", "tgs", "sbd", "hmp", "who", "nao", "nst"]
+    signal_counts = {}
+    for src in sources:
+        signal_counts[src] = await db.scalar(
+            select(func.count()).where(Signal.source == src)
+        ) or 0
+
     return {
         "total_sites": total_sites or 0,
         "active_anomalies": active_anomalies or 0,
@@ -215,4 +223,5 @@ async def get_summary(db: AsyncSession = Depends(get_db)):
         "nwss_national_detect_prop": round(float(nwss_avg), 4) if nwss_avg else None,
         "hmp_events_30d": hmp_events or 0,
         "who_events_30d": who_events or 0,
+        "signal_counts": signal_counts,
     }
