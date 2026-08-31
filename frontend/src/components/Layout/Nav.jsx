@@ -8,8 +8,10 @@ export default function Nav() {
   const { mutate: runPipeline, isPending } = useMutation({ mutationFn: triggerPipeline })
 
   const lastSync = summary?.latest_nwss_date
-    ? `NWSS updated ${format(new Date(summary.latest_nwss_date), 'MMM d, yyyy')}`
-    : 'Awaiting first sync'
+    ? `NWSS ${format(new Date(summary.latest_nwss_date), 'MMM d')}`
+    : summary?.latest_tgs_date
+    ? `TGS ${format(new Date(summary.latest_tgs_date), 'MMM d')}`
+    : 'awaiting sync'
 
   return (
     <nav className="nav">
@@ -24,13 +26,13 @@ export default function Nav() {
       </ul>
 
       <div className="nav-right">
-        <span className="nav-sync mono">{lastSync}</span>
+        <span className="nav-sync">{lastSync}</span>
         <button
           className="nav-run-btn"
           onClick={() => runPipeline()}
           disabled={isPending}
         >
-          {isPending ? 'Running…' : 'Sync Now'}
+          {isPending ? 'running…' : 'Sync Now'}
         </button>
       </div>
     </nav>

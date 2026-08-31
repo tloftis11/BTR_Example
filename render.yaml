@@ -5,7 +5,7 @@ databases:
     plan: basic-256mb
 
 services:
-  # ── Backend API ──────────────────────────────────────────────────────
+  # ── Backend API ──────────────────────────────────────────────────────────
   - type: web
     name: biothreat-api
     runtime: python
@@ -19,11 +19,13 @@ services:
           name: biothreat-db
           property: connectionString
       - key: SOCRATA_APP_TOKEN
-        sync: false   # set manually in Render dashboard
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
       - key: CORS_ORIGINS
         value: '["*"]'
 
-  # ── Frontend (static) ────────────────────────────────────────────────
+  # ── Frontend (static) ────────────────────────────────────────────────────
   - type: web
     name: biothreat-frontend
     runtime: static
@@ -34,13 +36,13 @@ services:
       - key: VITE_API_URL
         value: https://biothreat-api.onrender.com
 
-  # ── Daily pipeline cron ──────────────────────────────────────────────
+  # ── Daily pipeline cron ──────────────────────────────────────────────────
   - type: cron
     name: biothreat-pipeline
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    schedule: "0 6 * * *"   # 06:00 UTC daily
+    schedule: "0 6 * * *"
     startCommand: python -c "import asyncio; from app.pipeline.runner import run_all_sources; asyncio.run(run_all_sources())"
     plan: starter
     envVars:
@@ -49,4 +51,6 @@ services:
           name: biothreat-db
           property: connectionString
       - key: SOCRATA_APP_TOKEN
+        sync: false
+      - key: ANTHROPIC_API_KEY
         sync: false

@@ -86,6 +86,13 @@ async def fetch_nwss(lookback_days: int = 90) -> int:
             except (TypeError, ValueError):
                 return None
 
+        detect_prop = safe_float(r.get("detect_prop_15d"))
+        if detect_prop is None:
+            # Fallback: normalize percentile (0-100) to 0-1 scale
+            pct = safe_float(r.get("percentile"))
+            if pct is not None:
+                detect_prop = pct / 100.0
+
         records.append({
             "source": "nwss",
             "site_id": f"nwss_{wwtp_id}",
@@ -97,7 +104,7 @@ async def fetch_nwss(lookback_days: int = 90) -> int:
             "pathogen": "SARS-CoV-2",
             "signal_date": signal_date,
             "metric": "detect_prop_15d",
-            "value": safe_float(r.get("detect_prop_15d")),
+            "value": detect_prop,
             "raw": {
                 "ptc_15d": safe_float(r.get("ptc_15d")),
                 "percentile": safe_float(r.get("percentile")),
