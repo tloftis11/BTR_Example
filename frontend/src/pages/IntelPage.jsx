@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { format, formatDistanceToNow } from 'date-fns'
 import {
-  getSummary, getAnomalies, getPipelineRuns, getBriefing, sendChatMessage,
+  getSummary, getAnomalies, getPipelineRuns, getLatestBriefing, sendChatMessage,
 } from '../api/client'
 
 const STREAM_LABELS = {
@@ -26,7 +26,7 @@ export default function IntelPage() {
   const { data: runs }      = useQuery({ queryKey: ['runs'],      queryFn: getPipelineRuns, refetchInterval: 30_000 })
 
   const briefingMut = useMutation({
-    mutationFn: getBriefing,
+    mutationFn: getLatestBriefing,
     onSuccess: (data) => {
       if (data?.briefing) setBriefing(data.briefing)
       else setBriefing(`Error: ${data?.error || 'No response from server.'}`)
