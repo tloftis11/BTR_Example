@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import './landing.css'
+import '../landing.css'
 
 const BARS = [
   { id: 'bar-w', color: 'var(--sw)', pct: 72, label: 'NWSS', cls: 'lp-td-sw', change: '↑ 18%' },
